@@ -9,11 +9,7 @@ install-dependencies:
   script:
     - apk add --no-cache make
     - make environment
-  artifacts:
-    paths:
-      - venv/
-    expire_in: 1 hour
-
+    
 testingrun :
   stage: runtest
   script:
