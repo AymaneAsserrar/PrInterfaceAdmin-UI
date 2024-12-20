@@ -1,25 +1,17 @@
-.PHONY: all test install environment debug
+.PHONY: install & run clean
 
+install:
+	python -m pip install --upgrade pip
+	pip install -r requirements.txt
+run:
+	python app.py
 
-environment: ## Configure venv & dev requirements
-	(\
-		echo "> Creating venv"; \
-		python3 -m venv .venv; \
-		source .venv/bin/activate; \
-		echo "> Installing requirements"; \
-		pip install -r requirements.txt; \
-	)
-
-clean: ## Remove virtual env
-	echo "> Removing virtual environment"
-	rm -r .venv
-
-run: ## Run default mode
-	python3 app.py
-
-debug: ## Run local mode
-	python3 app.py --debug --env local
-
-help: ## Display this help screen
-	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
-
+clean:
+	find . -type d -name "__pycache__" -exec rm -r {} +
+	find . -type f -name "*.pyc" -delete
+	find . -type f -name "*.pyo" -delete
+	find . -type f -name "*.pyd" -delete
+	find . -type f -name ".coverage" -delete
+	find . -type d -name "*.egg-info" -exec rm -r {} +
+	find . -type d -name ".pytest_cache" -exec rm -r {} +
+	find . -type d -name ".coverage" -exec rm -r {} +

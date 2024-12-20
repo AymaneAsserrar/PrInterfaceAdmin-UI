@@ -1,0 +1,13 @@
+image: python:3.12-alpine
+
+stages:
+  - setup
+
+install-dependencies:
+  stage: setup
+  script:
+    - make install
+  artifacts:
+    paths:
+      - venv/
+    expire_in: 1 hour
