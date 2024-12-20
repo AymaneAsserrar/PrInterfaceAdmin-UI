@@ -6,6 +6,7 @@ stages:
 install-dependencies:
   stage: setup
   script:
+    - apk add --no-cache make
     - make install
   artifacts:
     paths:
