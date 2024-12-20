@@ -2,6 +2,7 @@ image: python:3.12-alpine
 
 stages:
   - setup
+  - runtest
 
 install-dependencies:
   stage: setup
@@ -12,3 +13,9 @@ install-dependencies:
     paths:
       - venv/
     expire_in: 1 hour
+
+testingrun :
+  stage: runtest
+  script:
+    - apk add --no-cache make
+    - make run
