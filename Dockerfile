@@ -18,7 +18,7 @@ COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # Copier le reste de l'application dans le conteneur
-COPY . /app
+COPY app.py /app
 
 # Définir la commande par défaut pour démarrer l'application
 CMD ["python", "app.py"]
