@@ -8,8 +8,9 @@ import requests
 import pandas as pd
 
 # Configuration de l'API
-RAM_INFO_URL = 'http://0.0.0.0:8000/metrics/v1/ram/info'
-CPU_API_URL = 'http://0.0.0.0:8000/metrics/v1/cpu/usage'
+
+RAM_INFO_URL = 'http://172.17.0.1:8000/metrics/v1/ram/info'
+CPU_API_URL = 'http://172.17.0.1:8000/metrics/v1/cpu/usage'
 
 def fetch_ram_info():
     try:
@@ -148,4 +149,4 @@ def update_metrics(_):
     return total_mb, total_gb, used_mb, used_gb, available_mb, available_gb, free_mb, free_gb, gauge_fig
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=8050)
