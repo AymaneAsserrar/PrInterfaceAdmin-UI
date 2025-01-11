@@ -13,9 +13,7 @@ from dash.exceptions import PreventUpdate
 import re
 from collections import deque, defaultdict
 from datetime import datetime
-import psutil
 import json
-import random
 
 # Initialize the Dash app
 app = dash.Dash(
@@ -70,7 +68,6 @@ class ServerManager:
         if server_id in self.servers:
             del self.servers[server_id]
             self.save_servers()
-
     def get_server_metrics(self, server_id):
         if server_id not in self.servers:
             return None
@@ -94,8 +91,46 @@ class ServerManager:
                     cpu_url = f"http://{ip}:{port}/metrics/v1/cpu/usage"
                     cpu_response = session.get(cpu_url, timeout=5)
                     cpu_data = cpu_response.json()
-                except:
-                    cpu_data = {'average': 0, 'per_core': []}
+                    #print(f"Raw CPU data: {cpu_data}")  # Debug print
+                    
+                    # Process CPU core data - combine cores from all properties
+                    per_core = []
+                    all_cores = []
+                    
+                    # Extract cores from each property
+                    for prop, cores in cpu_data.items():
+                        if isinstance(cores, list):
+                            for core in cores:
+                                if isinstance(core, dict) and 'core' in core and 'usage' in core:
+                                    try:
+                                        core_num = int(core['core'])
+                                        usage = float(core['usage'])
+                                        while len(all_cores) <= core_num:
+                                            all_cores.append([])
+                                        all_cores[core_num].append(usage)
+                                    except (ValueError, TypeError):
+                                        continue
+
+                    # Average usages for each core across properties
+                    for core_usages in all_cores:
+                        if core_usages:
+                            avg_usage = sum(core_usages) / len(core_usages)
+                            per_core.append(avg_usage)
+                        else:
+                            per_core.append(0)
+
+                    # Calculate overall CPU average
+                    average = sum(per_core) / len(per_core) if per_core else 0
+                    
+                    cpu_info = {
+                        'average': average,
+                        'per_core': per_core
+                    }
+                    #print(f"Processed CPU info: {cpu_info}")  # Debug print
+
+                except Exception as e:
+                    print(f"Error processing CPU data: {e}")
+                    cpu_info = {'average': 0, 'per_core': []}
 
                 try:
                     # RAM info metrics
@@ -123,7 +158,7 @@ class ServerManager:
 
                 return {
                     'health': True,
-                    'cpu': cpu_data,
+                    'cpu': cpu_info,
                     'ram': ram_data
                 }
 
@@ -142,7 +177,6 @@ def is_valid_ip(ip):
     if not re.match(pattern, ip):
         return False
     return all(0 <= int(octet) <= 255 for octet in ip.split('.'))
-
 # Layout components
 def create_server_card(server_id, server_info, metrics):
     is_healthy = metrics.get('health', False) if metrics else False
@@ -187,7 +221,7 @@ main_layout = dbc.Container([
     dbc.Row([
         dbc.Col([
             dbc.Button("Add Server", id="add-server-button", color="primary", className="mb-4"),
-            html.Div(id="servers-grid", children=[]),  # Initialize with empty children
+            html.Div(id="servers-grid", children=[]),
             dbc.Modal([
                 dbc.ModalHeader("Add New Server"),
                 dbc.ModalBody([
@@ -228,12 +262,10 @@ main_layout = dbc.Container([
                 interval=DEFAULT_REFRESH_RATE,
                 n_intervals=0
             ),
-            dcc.Store(id='refresh-rate-store', data=DEFAULT_REFRESH_RATE),
             dcc.Store(id='callback-trigger', data=0)
         ])
     ])
 ], fluid=True)
-
 # Server detail layout
 def create_server_detail_layout(server_id):
     server = server_manager.servers.get(server_id)
@@ -348,7 +380,6 @@ app.layout = html.Div([
     dcc.Location(id='url', refresh=False),
     html.Div(id='page-content')
 ])
-
 # Callbacks
 @app.callback(
     Output('page-content', 'children'),
@@ -396,14 +427,6 @@ def handle_remove_server(n_clicks):
         print(f"Error removing server: {e}")
     
     raise PreventUpdate
-# Extract server ID from button ID
-    server_id = button_id.replace('remove-server-', '')
-    try:
-        server_manager.remove_server(server_id)
-        return datetime.now().timestamp()
-    except Exception as e:
-        print(f"Error removing server: {e}")
-        raise PreventUpdate
 
 @app.callback(
     [Output('servers-grid', 'children'),
@@ -444,7 +467,6 @@ def update_grid():
     
     return dbc.Row([dbc.Col(card, width=12, md=6, lg=4) for card in cards])
 
-# Add server detail metrics callback
 @app.callback(
     [
         Output("error-message", "children"),
@@ -510,12 +532,15 @@ def update_server_metrics(n_intervals, server_id):
 
         # Create CPU cores graph
         cpu_cores_fig = go.Figure()
-        for i, core_usage in enumerate(metrics['cpu'].get('per_core', [])):
+        core_data = metrics['cpu'].get('per_core', [])
+        if core_data:
+            # Create the bar chart with all core data
             cpu_cores_fig.add_trace(go.Bar(
-                x=[f"Core {i}"],
-                y=[core_usage],
-                name=f"Core {i}"
+                x=[f"Core {i}" for i in range(len(core_data))],
+                y=core_data,
+                marker_color='blue'
             ))
+
         cpu_cores_fig.update_layout(
             title="CPU Usage Per Core",
             yaxis_title="Usage (%)",
@@ -594,7 +619,6 @@ def update_server_metrics(n_intervals, server_id):
         print(f"Error updating metrics: {str(e)}")
         return [f"Error updating metrics: {str(e)}"] + [dash.no_update] * 15
 
-# Refresh rate update callback
 @app.callback(
     Output('detail-refresh', 'interval'),
     [Input('refresh-rate-slider', 'value')]
@@ -604,4 +628,4 @@ def update_refresh_rate(value):
     return interval
 
 if __name__ == '__main__':
-    app.run_server(debug=True, host='0.0.0.0', port=8050)
+    app.run_server(debug=True, host='0.0.0.0', port=8050)   
