@@ -10,8 +10,6 @@ variables:
   IMAGE_NAME: devops.telecomste.fr:5050/printerfaceadmin/2024-25/group8/ui-g8
   CONTAINER_IMAGE: ${IMAGE_NAME}:${CI_COMMIT_SHA}
   CONTAINER_IMAGE_LATEST: ${IMAGE_NAME}:latest
-  CI_REGISTRY_USER: TokenDockerAgent 
-  CI_REGISTRY_PASSWORD: glpat-RKs7JCFTd8Tr8KsHPcxf
 
 before_script:
   - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
