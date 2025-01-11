@@ -40,47 +40,31 @@ Before you continue, ensure you have met the following requirements:
 ## How to use the project
 - **Start the application**:
 ```sh
-  python src/main.py
+  
 ```
 - **Click on**:
-    http://127.0.0.1:8090
+    http://0.0.0.0:8050/
 
 Once you successfully launch the application, you will be greeted with an interactive dashboard displaying detailed metrics about your system's performance. Here's what you will see:
 
-RAM Usage Monitoring:
-
-A gauge indicating the current percentage of RAM usage.
-A real-time line graph showing the history of RAM usage over time.
-Key statistics including:
-Total RAM: The total memory available on the system.
-Used RAM: The memory currently in use.
-Available RAM: The memory that is free and can be allocated.
-Free RAM: The exact amount of memory not in use.
-Refresh Rate Control:
-
-At the bottom of the dashboard, you can adjust the refresh rate slider to control how often the metrics update. Options range from 1 second to 30 seconds.
+- **CPU usage** : 
+- **RAM usage** : 
+- **Disk usage** : 
 
 - **Debug the application**:
 ```sh
-  python src/main.py --debug
+  
 ```
-
-### Utilisation
-
-Une fois l'application lancée, ouvrez votre navigateur et accédez à l'adresse suivante : http://127.0.0.1:8050
-
-Vous verrez une interface avec plusieurs graphiques dynamiques affichant les métriques du système en temps réel. Les graphiques incluent :
-
-- **Utilisation du CPU** : Affiche l'utilisation de chaque cœur du CPU.
-- **Utilisation de la RAM** : Affiche la RAM totale, utilisée et libre.
-- **Utilisation du Disque** : Affiche l'espace disque total, utilisé et libre.
-- **Utilisation du Réseau** : Affiche les octets reçus et envoyés par le réseau.
+- **Exit the application**:
+```sh
+  ctrl + C
+```
 
 ## How to contribute to the project
 
 - **Clone the project**:
 ```sh
-  git@devops.telecomste.fr:printerfaceadmin/2024-25/group8/ui-g8.git
+  git clone git@devops.telecomste.fr:printerfaceadmin/2024-25/group8/ui-g8.git
   cd ui-g8
 ```
 
