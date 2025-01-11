@@ -1,0 +1,52 @@
+# .gitlab-ci.yml
+image: docker:20.10.16
+
+services:
+  - docker:20.10.16-dind
+
+variables:
+  DOCKER_TLS_CERTDIR: ""  # Disable TLS since we're using tcp
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_DRIVER: overlay2
+  CI_REGISTRY: devops.telecomste.fr:5050
+  IMAGE_NAME: devops.telecomste.fr:5050/printerfaceadmin/2024-25/group8/ui-g8
+  CONTAINER_IMAGE: ${IMAGE_NAME}:${CI_COMMIT_SHA}
+  CONTAINER_IMAGE_LATEST: ${IMAGE_NAME}:latest
+
+before_script:
+  - until docker info; do sleep 1; done  # Wait for docker daemon to be ready
+  - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+
+stages:
+  - build
+  - test
+  - deploy
+
+build:
+  stage: build
+  script:
+    - docker build -t $CONTAINER_IMAGE .
+    - docker push $CONTAINER_IMAGE
+    - docker tag $CONTAINER_IMAGE $CONTAINER_IMAGE_LATEST
+    - docker push $CONTAINER_IMAGE_LATEST
+
+test:
+  stage: test
+  script:
+    - docker pull $CONTAINER_IMAGE
+    - echo "Add your tests here"
+
+deploy-staging:
+  stage: deploy
+  script:
+    - echo "Deploy to staging server"
+  only:
+    - develop
+
+deploy-production:
+  stage: deploy
+  script:
+    - echo "Deploy to production server"
+  only:
+    - main
+  when: manual

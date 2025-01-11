@@ -1,7 +1,3 @@
-"""
-Complete monitoring dashboard application with CPU and RAM metrics visualization.
-Save this as 'app.py'
-"""
 import dash
 from dash import dcc, html, ALL
 import dash_bootstrap_components as dbc
@@ -14,6 +10,7 @@ import re
 from collections import deque, defaultdict
 from datetime import datetime
 import json
+from requests.adapters import HTTPAdapter, Retry
 
 # Initialize the Dash app
 app = dash.Dash(
@@ -76,20 +73,35 @@ class ServerManager:
 
     def fetch_metrics(self, ip, port):
         try:
-            # Basic health check
-            health_url = f"http://{ip}:{port}/health"
-            health_response = requests.get(health_url, timeout=5)
-            is_healthy = health_response.status_code == 200
+            session = requests.Session()
+            # Configure session with longer timeouts and retries
+            retry_strategy = requests.adapters.Retry(
+                total=3,  # number of retries
+                backoff_factor=1,  # wait 1, 2, 4 seconds between retries
+                status_forcelist=[500, 502, 503, 504]  # retry on these status codes
+            )
+            adapter = requests.adapters.HTTPAdapter(max_retries=retry_strategy)
+            session.mount("http://", adapter)
+            session.mount("https://", adapter)
+            
+            # Set longer timeout for all requests
+            timeout = (10, 30)  # (connect timeout, read timeout)
 
-            if not is_healthy:
-                return {'health': False}
+            try:
+                # Basic health check
+                health_url = f"http://{ip}:{port}/health"
+                health_response = session.get(health_url, timeout=timeout)
+                is_healthy = health_response.status_code == 200
 
-            # Fetch metrics in parallel using a session
-            with requests.Session() as session:
+                if not is_healthy:
+                    print(f"Health check failed for {ip}:{port}")
+                    return {'health': False}
+
+                # Fetch metrics
                 try:
                     # CPU metrics
                     cpu_url = f"http://{ip}:{port}/metrics/v1/cpu/usage"
-                    cpu_response = session.get(cpu_url, timeout=5)
+                    cpu_response = session.get(cpu_url, timeout=timeout)
                     cpu_data = cpu_response.json()
                     #print(f"Raw CPU data: {cpu_data}")  # Debug print
                     
@@ -126,8 +138,6 @@ class ServerManager:
                         'average': average,
                         'per_core': per_core
                     }
-                    #print(f"Processed CPU info: {cpu_info}")  # Debug print
-
                 except Exception as e:
                     print(f"Error processing CPU data: {e}")
                     cpu_info = {'average': 0, 'per_core': []}
@@ -135,19 +145,21 @@ class ServerManager:
                 try:
                     # RAM info metrics
                     ram_info_url = f"http://{ip}:{port}/metrics/v1/ram/info"
-                    ram_info_response = session.get(ram_info_url, timeout=5)
+                    ram_info_response = session.get(ram_info_url, timeout=timeout)
                     ram_info = ram_info_response.json()
-                except:
+                except Exception as e:
+                    print(f"Error fetching RAM info: {e}")
                     ram_info = {'total': 0, 'available': 0, 'used': 0, 'free': 0}
 
                 try:
                     # RAM usage metrics
                     ram_usage_url = f"http://{ip}:{port}/metrics/v1/ram/usage"
-                    ram_usage_response = session.get(ram_usage_url, timeout=5)
+                    ram_usage_response = session.get(ram_usage_url, timeout=timeout)
                     ram_usage_data = ram_usage_response.json()
                     # Get the first usage value or default to 0
                     ram_usage = float(ram_usage_data[0]['usage']) if ram_usage_data else 0
-                except:
+                except Exception as e:
+                    print(f"Error fetching RAM usage: {e}")
                     ram_usage = 0
 
                 # Combine RAM data
@@ -162,9 +174,15 @@ class ServerManager:
                     'ram': ram_data
                 }
 
+            except requests.exceptions.RequestException as e:
+                print(f"Network error while fetching metrics: {e}")
+                return {'health': False}
+
         except Exception as e:
-            print(f"Error fetching metrics for {ip}:{port}: {str(e)}")
+            print(f"Error in fetch_metrics for {ip}:{port}: {str(e)}")
             return {'health': False}
+        finally:
+            session.close()
 
 server_manager = ServerManager()
 
