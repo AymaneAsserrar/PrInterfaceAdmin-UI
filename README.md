@@ -40,21 +40,32 @@ Before you continue, ensure you have met the following requirements:
 ## How to use the project
 - **Start the application**:
 ```sh
-  
+  make environment
+  make run
 ```
 - **Click on**:
     http://0.0.0.0:8050/
 
-Once you successfully launch the application, you will be greeted with an interactive dashboard displaying detailed metrics about your system's performance. Here's what you will see:
 
-- **CPU usage** : 
-- **RAM usage** : 
-- **Disk usage** : 
+Once the application is successfully launched, you will need to add a server. On the initial page, you'll see:
 
-- **Debug the application**:
-```sh
-  
-```
+- **Server Health** : Indicates whether the server is reachable or not.
+- **CPU usage** : Displays the current CPU usage as a percentage.
+- **RAM usage** : Displays the current RAM usage as a percentage.
+
+
+After clicking on 'View Details', you will access a more detailed interactive dashboard that includes:
+
+
+- **Server Health** : Status of the server.
+- **CPU Metrics** : - Average CPU Usage  
+                    - CPU History Graph: A graphical representation of CPU usage over time  
+                    - CPU Cores Graph: Details of individual core usage  
+- **RAM Metrics** : - RAM Gauge: A gauge indicating current RAM usage  
+                    - RAM History Graph: A timeline showing RAM usage patterns  
+                    - Detailed RAM Metrics: Total RAM, Used RAM, Available RAM, and Free RAM  
+- **Refresh Rate**: An adjustable control to set how often the dashboard refreshes the metrics.
+
 - **Exit the application**:
 ```sh
   ctrl + C
@@ -96,3 +107,9 @@ Want to see your name here? Check out the section above to learn how to contribu
 Special thanks to:
 
 Mehdi Zeghdallou, Damien Jacinto and Jules Chevalier: Our three professors who showed incredible patience and support throughout this project.
+
+## License
+
+No specific license has been assigned to this project.
+For questions regarding usage or rights, please contact the authors.
+
