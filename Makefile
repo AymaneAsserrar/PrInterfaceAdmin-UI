@@ -9,6 +9,7 @@ environment:
 	. .venv/bin/activate; \
 	echo "> Installing requirements"; \
 	.venv/bin/python -m pip install --upgrade pip; \
-	.venv/bin/pip install -r requirements.dev.txt;
+	make install;
 run:
-	python app.py
+	. .venv/bin/activate; \
+	python app.py;
