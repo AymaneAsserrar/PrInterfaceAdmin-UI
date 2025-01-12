@@ -58,12 +58,14 @@ After clicking on 'View Details', you will access a more detailed interactive da
 
 
 - **Server Health** : Status of the server.
-- **CPU Metrics** : - Average CPU Usage  
-                    - CPU History Graph: A graphical representation of CPU usage over time  
-                    - CPU Cores Graph: Details of individual core usage  
-- **RAM Metrics** : - RAM Gauge: A gauge indicating current RAM usage  
-                    - RAM History Graph: A timeline showing RAM usage patterns  
-                    - Detailed RAM Metrics: Total RAM, Used RAM, Available RAM, and Free RAM  
+- **CPU Metrics** : 
+  - Average CPU Usage  
+  - CPU History Graph: A graphical representation of CPU usage over time  
+  - CPU Cores Graph: Details of individual core usage  
+- **RAM Metrics** : 
+  - RAM Gauge: A gauge indicating current RAM usage  
+  - RAM History Graph: A timeline showing RAM usage patterns  
+  - Detailed RAM Metrics: Total RAM, Used RAM, Available RAM, and Free RAM  
 - **Refresh Rate**: An adjustable control to set how often the dashboard refreshes the metrics.
 
 - **Exit the application**:
@@ -93,7 +95,7 @@ Push your changes, describe what you did, and open a merge request with a nice d
 
 ## Contributors
 
-We wouldn’t be here without the contributions of these brilliant minds:
+We wouldn’t be here without the contributions of these brilliant minds:  
 -ASSERAR Aymane  
 -EL-KOULFA Hassane  
 -GOUHIER Matteo  
