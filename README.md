@@ -25,6 +25,7 @@ Before you continue, ensure you have met the following requirements:
   git clone git@devops.telecomste.fr:printerfaceadmin/2024-25/group8/ui-g8.git
   cd ui-g8
 ```
+- First method
 
 - **Activate a virtual environment**:
 ```sh
@@ -32,15 +33,21 @@ Before you continue, ensure you have met the following requirements:
   source venv/bin/activate
 ```
 
+
 - **Install the dependencies**:
 ```sh
   pip install -r requirements.txt
 ```
 
+- Second method
+- **Using makefile**:
+```sh
+  make environment
+```
+
 ## How to use the project
 - **Start the application**:
 ```sh
-  make environment
   make run
 ```
 - **Click on**:
