@@ -272,10 +272,27 @@ class ServerManager:
                     'usage_percent': ram_usage  # Add usage percentage
                 }
 
+                try:
+                    # Fetch log metrics
+                    log_url = f"http://{ip}:{port}/metrics/v1/logs/metrics"
+                    log_response = session.get(log_url, timeout=timeout)
+                    log_data = log_response.json()
+                except Exception as e:
+                    print(f"Error fetching log metrics: {e}")
+                    log_data = {
+                        'total_requests': 0,
+                        'success_count': 0,
+                        'error_count': 0,
+                        'status_codes': {},
+                        'top_urls': [],
+                        'recent_errors': []
+                    }
+
                 return {
                     'health': True,
                     'cpu': cpu_info,
-                    'ram': ram_data
+                    'ram': ram_data,
+                    'logs': log_data
                 }
 
             except requests.exceptions.RequestException as e:
@@ -476,6 +493,54 @@ def create_server_detail_layout(server_id):
                 ])
             ], width=12)
         ]),
+        #log section
+        dbc.Row([
+            dbc.Col([
+                dbc.Card([
+                    dbc.CardHeader(html.H4("Log Metrics", className="text-center")),
+                    dbc.CardBody([
+                        dbc.Row([
+                            # Request Statistics
+                            dbc.Col([
+                                html.H5("Request Statistics", className="text-center mb-3"),
+                                html.Div([
+                                    html.H3(id="total-requests", className="text-center"),
+                                    html.P("Total Requests", className="text-muted text-center")
+                                ], className="mb-3"),
+                                html.Div([
+                                    html.H3(id="success-requests", className="text-center text-success"),
+                                    html.P("Successful Requests", className="text-muted text-center")
+                                ], className="mb-3"),
+                                html.Div([
+                                    html.H3(id="error-requests", className="text-center text-danger"),
+                                    html.P("Error Requests", className="text-muted text-center")
+                                ])
+                            ], width=4),
+                            
+                            # Status Code Distribution
+                            dbc.Col([
+                                html.H5("Status Code Distribution", className="text-center mb-3"),
+                                dcc.Graph(id='status-codes-pie')
+                            ], width=4),
+                            
+                            # Top URLs
+                            dbc.Col([
+                                html.H5("Top Requested URLs", className="text-center mb-3"),
+                                dcc.Graph(id='top-urls-bar')
+                            ], width=4)
+                        ]),
+                        
+                        # Recent Errors Table
+                        dbc.Row([
+                            dbc.Col([
+                                html.H5("Recent Errors", className="text-center mt-4 mb-3"),
+                                html.Div(id="recent-errors-table")
+                            ])
+                        ])
+                    ])
+                ])
+            ], width=12)
+        ], className="mb-4"),
 
         # Refresh rate control
         dbc.Card([
@@ -591,6 +656,7 @@ def update_grid():
 
 @app.callback(
     [
+        # Existing outputs
         Output("error-message", "children"),
         Output("health-status", "children"),
         Output("health-status", "className"),
@@ -606,11 +672,19 @@ def update_grid():
         Output("ram-available", "children"),
         Output("ram-available-gb", "children"),
         Output("ram-free", "children"),
-        Output("ram-free-gb", "children")
+        Output("ram-free-gb", "children"),
+        # New log outputs
+        Output("total-requests", "children"),
+        Output("success-requests", "children"),
+        Output("error-requests", "children"),
+        Output("status-codes-pie", "figure"),
+        Output("top-urls-bar", "figure"),
+        Output("recent-errors-table", "children")
     ],
     [Input("detail-refresh", "n_intervals")],
     [State("server-id-store", "data")]
 )
+
 def update_server_metrics(n_intervals, server_id):
     if not server_id or server_id not in server_manager.servers:
         return ["Server not found"] + [dash.no_update] * 15
@@ -620,7 +694,7 @@ def update_server_metrics(n_intervals, server_id):
         metrics = server_manager.get_server_metrics(server_id)
         
         if not metrics or not metrics.get('health', False):
-            return ["Server is unreachable"] + [dash.no_update] * 15
+            return ["Server is unreachable"] + [dash.no_update] * 21
 
         # Update metrics history
         history = server_manager.metrics_history[server_id]
@@ -718,7 +792,56 @@ def update_server_metrics(n_intervals, server_id):
         available_mb, available_gb = format_memory(metrics['ram'].get('available', 0))
         free_mb, free_gb = format_memory(metrics['ram'].get('free', 0))
 
+        # Process log metrics
+        log_metrics = metrics.get('logs', {})
+        
+        # Create status codes pie chart
+        status_codes_fig = go.Figure(data=[go.Pie(
+            labels=list(log_metrics.get('status_codes', {}).keys()),
+            values=list(log_metrics.get('status_codes', {}).values()),
+            hole=.3
+        )])
+        status_codes_fig.update_layout(
+            height=300,
+            margin=dict(l=20, r=20, t=30, b=20),
+            showlegend=True
+        )
+
+        # Create top URLs bar chart
+        top_urls = log_metrics.get('top_urls', [])
+        top_urls_fig = go.Figure(data=[go.Bar(
+            x=[url['count'] for url in top_urls],
+            y=[url['url'] for url in top_urls],
+            orientation='h'
+        )])
+        top_urls_fig.update_layout(
+            height=300,
+            margin=dict(l=20, r=20, t=30, b=20),
+            xaxis_title="Request Count"
+        )
+
+        # Create recent errors table
+        recent_errors_table = dbc.Table([
+            html.Thead([
+                html.Tr([
+                    html.Th("Time"),
+                    html.Th("IP"),
+                    html.Th("URL"),
+                    html.Th("Status")
+                ])
+            ]),
+            html.Tbody([
+                html.Tr([
+                    html.Td(error['timestamp']),
+                    html.Td(error['ip']),
+                    html.Td(error['url']),
+                    html.Td(error['status_code'])
+                ]) for error in log_metrics.get('recent_errors', [])
+            ])
+        ], bordered=True, hover=True, responsive=True)
+
         return [
+            # Existing returns
             "",  # Clear error message
             "Reachable",
             "text-success",
@@ -734,7 +857,14 @@ def update_server_metrics(n_intervals, server_id):
             available_mb,
             available_gb,
             free_mb,
-            free_gb
+            free_gb,
+            # New log metric returns
+            str(log_metrics.get('total_requests', 0)),
+            str(log_metrics.get('success_count', 0)),
+            str(log_metrics.get('error_count', 0)),
+            status_codes_fig,
+            top_urls_fig,
+            recent_errors_table
         ]
 
     except Exception as e:
