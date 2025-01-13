@@ -25,7 +25,8 @@ Before you continue, ensure you have met the following requirements:
   git clone git@devops.telecomste.fr:printerfaceadmin/2024-25/group8/ui-g8.git
   cd ui-g8
 ```
-- First method
+
+### Method 1: Manual Installation
 
 - **Activate a virtual environment**:
 ```sh
@@ -39,8 +40,8 @@ Before you continue, ensure you have met the following requirements:
   pip install -r requirements.txt
 ```
 
-- Second method
-- **Using makefile**:
+### Method 2: Using makefile
+
 ```sh
   make environment
 ```
