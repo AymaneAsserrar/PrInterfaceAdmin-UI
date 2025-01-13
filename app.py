@@ -35,20 +35,93 @@ class ServerManager:
     def __init__(self):
         self.servers = {}  # Dictionary to store server configurations
         self.metrics_history = defaultdict(ServerMetricsHistory)
+        self.initialize_servers_file()
         self.load_servers()
 
+    def initialize_servers_file(self):
+        """
+        Initialize the servers.json file if it doesn't exist or is invalid
+        """
+        try:
+            # Try to open the file
+            with open('servers.json', 'r') as f:
+                try:
+                    # Try to parse the JSON
+                    json.load(f)
+                except json.JSONDecodeError:
+                    # If JSON is invalid, create new file with empty dict
+                    print("servers.json is corrupted, creating new file")
+                    self._create_empty_servers_file()
+        except FileNotFoundError:
+            # If file doesn't exist, create it
+            print("servers.json not found, creating new file")
+            self._create_empty_servers_file()
+
+    def _create_empty_servers_file(self):
+        """
+        Create a new servers.json file with an empty dictionary
+        """
+        with open('servers.json', 'w') as f:
+            json.dump({}, f)
+
     def load_servers(self):
+        """
+        Load servers from the JSON file with proper error handling
+        """
         try:
             with open('servers.json', 'r') as f:
-                self.servers = json.load(f)
+                loaded_data = json.load(f)
+                
+                # Validate loaded data
+                if not isinstance(loaded_data, dict):
+                    print("Invalid servers.json format, resetting to empty dictionary")
+                    self.servers = {}
+                    self._create_empty_servers_file()
+                else:
+                    self.servers = loaded_data
         except FileNotFoundError:
+            print("servers.json not found during load, creating new file")
             self.servers = {}
+            self._create_empty_servers_file()
+        except json.JSONDecodeError:
+            print("Error decoding servers.json, resetting to empty dictionary")
+            self.servers = {}
+            self._create_empty_servers_file()
+        except Exception as e:
+            print(f"Unexpected error loading servers.json: {str(e)}")
+            self.servers = {}
+            self._create_empty_servers_file()
 
     def save_servers(self):
-        with open('servers.json', 'w') as f:
-            json.dump(self.servers, f)
+        """
+        Save servers to JSON file with error handling
+        """
+        try:
+            temp_file = 'servers.json.tmp'
+            
+            # First write to a temporary file
+            with open(temp_file, 'w') as f:
+                json.dump(self.servers, f, indent=4)
+            
+            # If successful, rename temp file to actual file
+            import os
+            if os.path.exists('servers.json'):
+                os.remove('servers.json')
+            os.rename(temp_file, 'servers.json')
+        
+        except Exception as e:
+            print(f"Error saving servers.json: {str(e)}")
+            # If temp file exists after error, clean it up
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
 
     def add_server(self, ip, port, nickname, hostname):
+        """
+        Add a new server with validation
+        """
+        if not all([ip, port, nickname, hostname]):
+            raise ValueError("All server parameters are required")
+        
         server_id = f"{ip}:{port}"
         self.servers[server_id] = {
             'ip': ip,
@@ -60,11 +133,42 @@ class ServerManager:
             'ram_info': None
         }
         self.save_servers()
+        return server_id
 
     def remove_server(self, server_id):
+        """
+        Remove a server with validation
+        """
+        if server_id not in self.servers:
+            print(f"Warning: Attempted to remove non-existent server {server_id}")
+            return False
+            
+        del self.servers[server_id]
+        self.save_servers()
+        return True
+
+    def get_servers(self):
+        """
+        Get all servers with validation
+        """
+        if not self.servers:
+            return {}
+        return self.servers
+
+    def get_server(self, server_id):
+        """
+        Get a specific server with validation
+        """
+        return self.servers.get(server_id)
+
+    def update_server_last_seen(self, server_id):
+        """
+        Update the last seen timestamp for a server
+        """
         if server_id in self.servers:
-            del self.servers[server_id]
+            self.servers[server_id]['last_seen'] = datetime.now().isoformat()
             self.save_servers()
+            
     def get_server_metrics(self, server_id):
         if server_id not in self.servers:
             return None
